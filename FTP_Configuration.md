@@ -1,0 +1,59 @@
+#FTP_Configuration.md
+# FTP Server Setup on Fedora (vsftpd)
+
+This document explains how to configure an FTP server using vsftpd on Fedora.
+
+---
+
+## 1. Install vsftpd
+sudo dnf install vsftpd
+
+2. Create FTP Users
+sudo useradd -m ftpuser
+sudo passwd ftpuser
+
+*Replace ftpuser with your desired username.
+*Set a password when prompted.
+
+3. Configure vsftpd
+
+Edit the config file:
+sudo nano /etc/vsftpd/vsftpd.conf
+
+Important options:
+anonymous_enable=NO
+local_enable=YES
+write_enable=YES
+local_root=/srv/ftp
+listen_port=21
+
+*local_enable=YES → allows system users to log in
+*write_enable=YES → allows upload/write
+*local_root → directory FTP users can access
+*Save and exit.(ctrl+o ,enter, ctrl+x)
+
+4. Set Directory Permissions
+sudo mkdir -p /srv/ftp
+sudo chown ftpuser:ftpuser /srv/ftp
+sudo chmod 755 /srv/ftp
+
+5. Start and Enable FTP Service
+sudo systemctl restart vsftpd
+sudo systemctl enable vsftpd
+
+6. Configure Firewall
+sudo firewall-cmd --permanent --add-service=ftp
+sudo firewall-cmd --reload
+
+7. Test FTP Access
+ftp 192.168.193.128
+# Login with ftpuser and the password you created
+
+8. Troubleshooting
+
+Check logs:
+sudo journalctl -xe | grep vsftpd
+
+
+Check permissions of FTP directories
+Ensure local_enable=YES in vsftpd.conf
