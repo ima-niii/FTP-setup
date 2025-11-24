@@ -1,0 +1,85 @@
+6.(b) Setting up an NFS Server on Fedora
+NFS (Network File System) allows you to share directories across a network, enabling clients to access files on your Fedora server.
+
+ 1. Install NFS Server
+Make sure the NFS server software is installed:
+sudo dnf install nfs-utils -y
+
+nfs-utils → installs NFS server and related tools
+-y → automatically confirms installation prompts
+
+2. Create a Directory to Share
+Choose a directory to share over the network. Example:
+sudo mkdir -p /shared
+sudo chown nfsnobody:nfsnobody /shared
+sudo chmod 755 /shared
+
+mkdir -p → creates the folder
+chown nfsnobody:nfsnobody → sets default NFS ownership for security
+chmod 755 → readable by all clients, writable by owner
+Replace /shared with your desired directory path.
+
+3. Configure NFS Exports
+Edit the NFS export file:
+sudo nano /etc/exports
+
+Add a line for the directory:
+/shared *(rw,fsid=0,sync,no_root_squash,no_all_squash)
+
+/shared → path to the directory being shared
+* → allows all IP addresses; can replace with specific IPs or subnets for security
+
+Options:
+rw → read/write access
+fsid=0 → marks root of NFS
+sync → synchronous writes for reliability
+no_root_squash → allows root access from clients
+no_all_squash → preserves client user IDs
+
+4. Start and Enable NFS Services
+sudo systemctl start nfs-server.service
+sudo systemctl enable nfs-server.service
+Starts the NFS server immediately
+
+Ensures it starts automatically at boot
+
+5. Open Firewall Ports
+Allow NFS through firewall:
+sudo firewall-cmd --permanent --zone=public --add-service=nfs
+sudo firewall-cmd --permanent --zone=public --add-service=mountd
+sudo firewall-cmd --permanent --zone=public --add-service=rpc-bind
+sudo firewall-cmd --reload
+
+Opens ports required for NFS and related services
+
+6. Export the NFS Shares
+Apply the export configuration:
+sudo exportfs -arv
+
+-a → export all directories listed in /etc/exports
+-r → re-export (refresh)
+-v → verbose output to see what’s exported
+
+7. Restart NFS Service
+sudo systemctl restart nfs-server
+
+Ensures all changes take effect
+
+8. Set Appropriate Permissions
+sudo chmod -R 755 /shared
+
+Allows read/write/execute for owner, read/execute for others
+Make sure permissions are secure but accessible to intended clients
+
+9. Accessing the NFS Share (Client Side)
+On a client machine, mount the NFS share:
+sudo mount -t nfs server_name:/shared /mnt/mount_point
+
+server_name → replace with Fedora server hostname or IP
+/mnt/mount_point → local folder on client to mount the share
+After this, clients can read/write files as allowed
+
+10. Automount NFS Shares
+To mount NFS shares automatically on boot, add an entry in /etc/fstab on the client:
+server_name:/shared /mnt/mount_point nfs defaults 0 0
+This ensures the share mounts automatically when the system starts
