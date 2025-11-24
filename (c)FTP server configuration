@@ -3,9 +3,7 @@
 
 This document explains how to configure an FTP server using vsftpd on Fedora.
 
----
-
-## 1. Install vsftpd
+ 1. Install vsftpd
 sudo dnf install vsftpd
 
 2. Create FTP Users
