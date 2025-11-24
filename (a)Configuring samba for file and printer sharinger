@@ -1,0 +1,114 @@
+6.(a) Configuring Samba for File and Printer Sharing on Fedora
+
+Samba is an open-source implementation of the SMB (Server Message Block) protocol. It allows file and printer sharing between Linux and Windows systems.
+This guide walks you through configuring Samba on Fedora step by step.
+
+ 1. Install Samba
+Make sure Samba is installed on your Fedora server:
+sudo dnf install samba -y
+
+dnf install samba → installs Samba server and client tools
+-y → automatically answers yes to installation prompts
+
+2. Configure Firewall
+Allow Samba traffic through Fedora’s firewall so clients can access your shares:
+sudo firewall-cmd --permanent --zone=public --add-service=samba
+sudo firewall-cmd --permanent --zone=public --add-port=139/tcp
+sudo firewall-cmd --permanent --zone=public --add-port=445/tcp
+sudo firewall-cmd --reload
+
+--add-service=samba → opens standard Samba ports
+--add-port=139/tcp and --add-port=445/tcp → ensures SMB/CIFS works
+--reload → applies the firewall changes
+
+3. Create a Samba User
+Samba requires a user account for authentication.Replace nbashir with your Linux username :
+sudo smbpasswd -a nbashir
+
+You will be prompted to enter and confirm a Samba password
+This password will be used when connecting from Windows or other clients
+Note: The Samba username should match your Linux user account (nbashir) for simplicity.
+
+4. Create a Samba Share Directory
+Choose a folder to share with other devices:
+sudo mkdir -p /srv/samba/shared_folder
+sudo chown nbashir:nbashir /srv/samba/shared_folder
+sudo chmod 2770 /srv/samba/shared_folder
+
+mkdir -p → creates the directory, including parent directories if needed
+chown nbashir:nbashir → ensures nbashir owns the folder
+chmod 2770 → sets permissions: owner and group can read/write, others have no access; 2 sets the setgid bit so new files inherit the group
+
+5. Backup and Configure Samba (smb.conf)
+Always back up the original configuration file:
+sudo cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
+
+Edit the configuration:
+sudo nano /etc/samba/smb.conf
+
+Example smb.conf:
+[global]
+workgroup = WORKGROUP
+security = user
+map to guest = Bad User
+
+[SharedFolder]
+path = /srv/samba/shared_folder
+browseable = yes
+read only = no
+valid users = nbashir
+
+[printers]
+path = /var/spool/samba
+printable = yes
+guest ok = no
+[global] → global Samba settings
+
+workgroup → your network workgroup (default is WORKGROUP)
+security = user → enables user-level authentication
+map to guest = Bad User → maps unknown users to guest account
+[SharedFolder] → the folder we just created
+path → directory to share
+browseable = yes → visible on the network
+read only = no → users can modify files
+valid users = nbashir → only nbashir can access
+[printers] → optional printer sharing
+path = /var/spool/samba → default spool directory
+printable = yes → marks the share as a printer
+guest ok = no → restricts access
+
+6. Restart Samba Services
+After editing the config, restart and enable Samba:
+sudo systemctl restart smb
+sudo systemctl start smb
+sudo systemctl enable smb
+
+restart → applies configuration changes
+start → ensures Samba is running now
+enable → starts Samba automatically on boot
+
+7. Test Samba Configuration
+Check your configuration for errors:
+testparm
+
+Shows syntax errors or warnings in smb.conf
+Confirms that Samba will start without issues
+
+8. Optional: Printer Sharing (CUPS)
+To share printers:
+sudo dnf install cups -y
+sudo systemctl start cups
+sudo systemctl enable cups
+
+Add printers in smb.conf under [printers]
+Restart Samba after making changes:
+sudo systemctl restart smb
+
+9. Connect to the Samba Share
+From Linux:
+smbclient //server_name/SharedFolder -U nbashir
+Replace server_name with the hostname or IP of your Fedora server
+From Windows:
+Open File Explorer → type:
+\\server_name\SharedFolder
+Enter username nbashir and Samba password when prompted
